@@ -1,0 +1,10 @@
+{
+    "path_info": "./",
+    "path_data": "./demo.json",
+    "type_selected" : [
+        "Spectroscopic",
+        "Definitions",
+        "line list",
+        "partition function", 
+        "opacity"]
+}
