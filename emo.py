@@ -539,7 +539,7 @@ def registration(data: dict, *, token: str = ''):
     metadata = zenodo_metadata()
     zenodo_fill(deposit_id=deposit_id,
                 metadata=metadata, token=token)
-    zenodo_upload(deposit_id=deposit_id, bucket_url=bucket_url, token=token)
+    # zenodo_upload(deposit_id=deposit_id, bucket_url=bucket_url, token=token)
 
 # supplementary functions
 def url_parser(url):
