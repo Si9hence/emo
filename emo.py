@@ -11,6 +11,9 @@ from time import sleep, strftime, localtime
 class Config:
     urls = ['https://exomol.com/data/molecules/NaO/23Na-16O/NaOUCMe/',
             'https://exomol.com/data/molecules/SiO/28Si-16O/SiOUVenIR/']
+    
+    token = '87EdGUa0eTuaYZMkc4PFrZnlyQrTDc3Eq2LnQKgXhyHs2UfhjHygqC3nH5YL'
+    
     selected = ['Spectroscopic',
                     'Definitions',
                     'line list',
@@ -18,7 +21,6 @@ class Config:
                     'opacity'
                     ]
     path = '/mnt/data/exomol/exomol3_data'
-    token = '87EdGUa0eTuaYZMkc4PFrZnlyQrTDc3Eq2LnQKgXhyHs2UfhjHygqC3nH5YL'
 
 # data collection
 def collection(url, save=False):
@@ -539,7 +541,7 @@ def registration(data: dict, *, token: str = ''):
     metadata = zenodo_metadata()
     zenodo_fill(deposit_id=deposit_id,
                 metadata=metadata, token=token)
-    # zenodo_upload(deposit_id=deposit_id, bucket_url=bucket_url, token=token)
+    zenodo_upload(deposit_id=deposit_id, bucket_url=bucket_url, token=token)
 
 # supplementary functions
 def url_parser(url):
@@ -565,15 +567,12 @@ def zenodo_rec_deposit(token, path_save='./'):
     tmp.to_excel(path_save+strftime("%Y_%m_%d_%H_%M", localtime())+'.xlsx')
     return
 
-
-if __name__ == 'main':
-    for url in Config.urls:
-        
-        data = collection(url)
-        token = Config.token
-        
-        data = json.load(open(url_parser(url), 'rb'))
-        registration(data=data, token=token)
+for url in Config.urls:
+    
+    data = collection(url)
+    token = Config.token
+    data = json.load(open(url_parser(url), 'rb'))
+    registration(data=data, token=token)
         
     # to check registration record
     # zenodo_rec_deposit(token=Config.token)
