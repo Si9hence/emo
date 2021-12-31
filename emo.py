@@ -5,7 +5,7 @@ import os
 import markdown
 import pandas as pd
 from requests_html import HTMLSession
-from time import sleep, strftime, localtime
+from time import strftime, localtime
 
 
 class Config:
@@ -26,7 +26,7 @@ class Config:
     path = '/mnt/data/exomol/exomol3_data'
 
 
-def collection(url, save=False):
+def collection(url):
     # data collection
     def get_data_general(item):
         """
@@ -95,6 +95,7 @@ def collection(url, save=False):
             if 'Definitions file' in item.find(selector='h4')[0].text:
                 for i in range(len(item.find(selector='h4'))):
                     label = item.find(selector='h4')[i].text
+                    # print(label)
                     abs_links = item.find(
                         selector='div.list-group')[i].absolute_links.pop()
                     res['data'][label] = {'url': abs_links, 'upload': True}
@@ -103,7 +104,7 @@ def collection(url, save=False):
                         if "YYYYMMDD" in key:
                             res["version"] = key.split()[0]
                             break
-            # the spectrum over file will be collected
+            # the spectrum file will be deleted
             elif 'Spectrum overview' in item.find(selector='h4')[0].text:
                 label = item.find(selector='h4')[0].text
                 res['data'][label] = {'url': item.find(
@@ -115,7 +116,7 @@ def collection(url, save=False):
                 res['data'].update(get_data_general(item))
 
         if save:
-            with open('{iso}_{dataset}.json'.format(iso=res['isot'], dataset=res['dataset']), 'w') as f:
+            with open('./arc/{iso}_{dataset}.json'.format(iso=res['isot'], dataset=res['dataset']), 'w') as f:
                 json.dump(res, f)
 
         return res
@@ -155,19 +156,22 @@ def collection(url, save=False):
                 'partition function',
                 'opacity'
             ]
+
         for kw in selected:
             if kw in key:
                 return True
             else:
                 pass
+
         return False
 
     def zenodo_data_prep_server(data: dict):
+        # this function currently not in use
         for datum in list(data['data'].keys()):
+            tmp = data['data'][datum]
             if "Spectroscopic" in datum:
                 data['data'][datum]['upload'] = check_selected(datum)
             elif "Definitions" in datum:
-                tmp = data['data'][datum]
                 path = repath(tmp['url'])
                 tmp['path'] = path
                 try:
@@ -196,6 +200,7 @@ def collection(url, save=False):
     def zenodo_data_prep_local(data: dict):
         for datum in list(data['data'].keys()):
             if "Spectroscopic" in datum:
+                tmp = data['data'][datum]
                 data['data'][datum]['upload'] = check_selected(datum)
             elif "Definitions" in datum:
                 tmp = data['data'][datum]
@@ -206,14 +211,14 @@ def collection(url, save=False):
                 del data['data'][datum]
             else:
                 for item in data['data'][datum]['files']:
-                    path = repath(tmp['url'])
+                    path = repath(item['url'])
                     item['path'] = path
                 if check_selected(datum, selected=Config.selected):
                     data['data'][datum]['upload'] = True
                 else:
                     data['data'][datum]['upload'] = False
 
-        with open('{molecule}_{iso}_{dataset}.json'.format(
+        with open('./arc/{molecule}_{iso}_{dataset}.json'.format(
                 molecule=data['molecule'],
                 iso=data['isot'],
                 dataset=data['dataset']),
@@ -319,7 +324,7 @@ def collection(url, save=False):
         molecule = data['molecule']
         isot = data['isot']
         db = data['dataset']
-        print("/".join([molecule, isot, db]))
+        # print("/".join([molecule, isot, db]))
         url = data['url']
         des_ini = 'The dataset is an archive of ExoMol page, {url}.<br>Please check the reference details according ' \
                   'to the following description or directly from the website.<br>\n'.format(
@@ -347,7 +352,8 @@ def collection(url, save=False):
                 fp.write(markdown.markdown(des))
         return des
 
-    data = get_data(url, save=save)
+    print('collecting data from {url}'.format(url=url))
+    data = get_data(url)
     data = zenodo_data_prep_local(data)
     emo_md(data, flag='full')
     emo_md(data, flag='simple')
@@ -414,7 +420,7 @@ def registration(data: dict, *, token: str = ''):
         path_root: path of the database, usually default on ExoMol
         The function uploads relevant files via a files list to the Zenodo registration
         """
-        file_description = "{molecule}_{isot}_{db}.md".format(
+        file_description = "./arc/{molecule}_{isot}_{db}.md".format(
             molecule=molecule, isot=isot, db=db)
         with open("./" + file_description, "rb") as f_tmp:
             r = requests.put(
@@ -555,7 +561,7 @@ def registration(data: dict, *, token: str = ''):
         keywords = match_keywords(data)
         grants = match_grants(data)
 
-        with open("./{molecule}_{isot}_{db}.html".format(molecule=molecule, isot=isot, db=db), encoding='UTF-8') as f_tmp:
+        with open("./arc/{molecule}_{isot}_{db}.html".format(molecule=molecule, isot=isot, db=db), encoding='UTF-8') as f_tmp:
             description = f_tmp.read()
 
         # insert the prepared information of a metadata format
@@ -617,11 +623,55 @@ def zenodo_rec_deposit(token, path_save='./'):
     return
 
 
-for url in Config.urls:
-    data = collection(url)
-    token = Config.token
-    data = json.load(open(url_parser(url), 'rb'))
-    registration(data=data, token=token)
+def zenodo_del_unpublished(token):
+    """
+    delete unpublished registration
+    usually called when a new series of registration is started
+    """
+    def del_check(res):
+        # check whether the deletion is successful
+        if res.status_code == 204:
+            print('del deposition id:%s success' % id)
+        elif res.status_code == 404:
+            print('Deposition file does not exist')
+        elif res.status_code == 403:
+            print('Deleting an already published deposition')
+        else:
+            print(res.status_code)
 
-    # to check registration record
-    # zenodo_rec_deposit(token=Config.token)
+    def ids_list_gen(ids='all'):
+        # get ids for all unpublished registration form
+        ids_list = list()
+        # in case ids == 'all', a request will be sent to Zenodo and all unpublished
+        # form will be deleted
+        if ids == 'all':
+            if input('clear all unpublished registration? y/n \n') == 'y':
+                r = requests.get('https://zenodo.org/api/deposit/depositions',
+                                 params={'access_token': token, 'size': 200, 'status': 'draft'}).json()
+                for item in r:
+                    ids_list.append(item['id'])
+            else:
+                print('del abolished')
+        elif isinstance(ids, str):
+            ids_list = [ids]
+        elif isinstance(ids, list) and len(ids) > 0:
+            ids_list = ids
+        return ids_list
+
+    ids_list = ids_list_gen(ids)
+    # delete unpublished registration in dis_list
+    for id in ids_list:
+        r = requests.delete('https://zenodo.org/api/deposit/depositions/%s' % id,
+                            params={'access_token': token})
+        del_check(r)
+        sleep(1)
+
+if __name__ == "__main__":
+
+    for url in Config.urls:
+        data = collection(url)
+        token = Config.token
+        # registration(data=data, token=token)
+
+        # to check registration record
+        # zenodo_rec_deposit(token=Config.token)
