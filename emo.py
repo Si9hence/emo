@@ -5,28 +5,30 @@ import os
 import markdown
 import pandas as pd
 from requests_html import HTMLSession
-from time import strftime, localtime
+from time import strftime, localtime, sleep
 
 
 class Config:
-    def __init__(self):
-        return
+    def __init__(self, urls, token, selected, path):
+        self.urls = urls
+        self.token = token
+        self.selected = selected
+        self.path = path
+    # urls = ['https://exomol.com/data/molecules/NaO/23Na-16O/NaOUCMe/',
+    #         'https://exomol.com/data/molecules/SiO/28Si-16O/SiOUVenIR/']
 
-    urls = ['https://exomol.com/data/molecules/NaO/23Na-16O/NaOUCMe/',
-            'https://exomol.com/data/molecules/SiO/28Si-16O/SiOUVenIR/']
+    # token = '87EdGUa0eTuaYZMkc4PFrZnlyQrTDc3Eq2LnQKgXhyHs2UfhjHygqC3nH5YL'
 
-    token = '87EdGUa0eTuaYZMkc4PFrZnlyQrTDc3Eq2LnQKgXhyHs2UfhjHygqC3nH5YL'
-
-    selected = ['Spectroscopic',
-                'Definitions',
-                'line list',
-                'partition function',
-                'opacity'
-                ]
-    path = '/mnt/data/exomol/exomol3_data'
+    # selected = ['Spectroscopic',
+    #             'Definitions',
+    #             'line list',
+    #             'partition function',
+    #             'opacity'
+    #             ]
+    # path = '/mnt/data/exomol/exomol3_data'
 
 
-def collection(url):
+def collection(url: str, path_pre: str, selected):
     # data collection
     def get_data_general(item):
         """
@@ -79,8 +81,7 @@ def collection(url):
             'ExoCross'
         }
         s = HTMLSession()
-        r = s.get(url)
-        tmp = r.html.find(selector='div.well')
+        response = s.get(url).html.find(selector='div.well')
 
         res = {
             'url': url,
@@ -90,7 +91,7 @@ def collection(url):
             'data': dict()
         }
 
-        for item in tmp:
+        for item in response:
             # the definition file will be collected
             if 'Definitions file' in item.find(selector='h4')[0].text:
                 for i in range(len(item.find(selector='h4'))):
@@ -121,7 +122,7 @@ def collection(url):
 
         return res
 
-    def repath(path: str, pre: str = Config.path):
+    def repath(path: str, pre: str = path_pre):
 
         local_path = "/".join([pre] + path.split(".com/")[1::])
         local_path = local_path.replace("/db", '')
@@ -144,7 +145,7 @@ def collection(url):
                 tag += 1
                 fs = fs / 1024
 
-    def check_selected(key: str, selected=Config.selected):
+    def check_selected(key: str, selected=selected):
 
         if selected:
             pass
@@ -213,7 +214,7 @@ def collection(url):
                 for item in data['data'][datum]['files']:
                     path = repath(item['url'])
                     item['path'] = path
-                if check_selected(datum, selected=Config.selected):
+                if check_selected(datum, selected=selected):
                     data['data'][datum]['upload'] = True
                 else:
                     data['data'][datum]['upload'] = False
@@ -362,7 +363,7 @@ def collection(url):
 
 
 # data registration
-def registration(data: dict, *, token: str = ''):
+def registration(data: dict, token: str):
     """
     data: archived json data
     token: Zenodo authorization token
@@ -602,28 +603,48 @@ def url_parser(url):
     return "_".join(url.split("/")[-4:-1]) + ".json"
 
 
-def zenodo_rec_deposit(token, path_save='./'):
+def rec_deposit(token, path_save='./'):
     """
     This function will collect the information of registered databases and associated DOI
     """
     response = requests.get('https://zenodo.org/api/deposit/depositions',
-                            params={"size": 200, 'access_token': token})
+                            params={"size": 500, 'access_token': token})
+    # response = requests.get('https://zenodo.org/api/records',
+    #                     params={'access_token': token})
     res = response.json()
-    tmp = dict()
-    for item in res:
-        tmp[item['title']] = {
-            'doi': item['links']['doi'],
-            'created date': item['created'],
-            'version(publication_date)': item['metadata']['version']
-        }
+    # tmp = dict()
+    # for item in res:
+    #     tmp[item['title']] = {
+    #         'doi': item['links']['doi'],
+    #         'created date': item['created'],
+    #         'version(publication_date)': item['metadata']['version']
+    #     }
 
-    tmp = pd.DataFrame(tmp)
+    # tmp = pd.DataFrame(tmp)
+    tmp = pd.DataFrame(res)
     print(tmp)
-    tmp.to_excel(path_save + strftime("%Y_%m_%d_%H_%M", localtime()) + '.xlsx')
+    tmp.to_excel(path_save + strftime("%Y%m%d", localtime()) + '.xlsx', index=False)
     return
 
 
-def zenodo_del_unpublished(token):
+def ids_list_gen(token, ids='all'):
+    # get ids for all unpublished registration form
+    ids_list = list()
+    # in case ids == 'all', a request will be sent to Zenodo and all unpublished
+    # form will be deleted
+    if ids == 'all':
+        r = requests.get('https://zenodo.org/api/deposit/depositions',
+                            params={'access_token': token, 'size': 200, 'status': 'draft'}).json()
+        for item in r:
+            ids_list.append(item['id'])
+    elif isinstance(ids, str):
+        ids_list = [ids]
+    elif isinstance(ids, list) and len(ids) > 0:
+        ids_list = ids
+    return ids_list
+
+
+def del_unpublished(token):
     """
     delete unpublished registration
     usually called when a new series of registration is started
@@ -639,39 +660,66 @@ def zenodo_del_unpublished(token):
         else:
             print(res.status_code)
 
-    def ids_list_gen(ids='all'):
-        # get ids for all unpublished registration form
-        ids_list = list()
-        # in case ids == 'all', a request will be sent to Zenodo and all unpublished
-        # form will be deleted
-        if ids == 'all':
-            if input('clear all unpublished registration? y/n \n') == 'y':
-                r = requests.get('https://zenodo.org/api/deposit/depositions',
-                                 params={'access_token': token, 'size': 200, 'status': 'draft'}).json()
-                for item in r:
-                    ids_list.append(item['id'])
-            else:
-                print('del abolished')
-        elif isinstance(ids, str):
-            ids_list = [ids]
-        elif isinstance(ids, list) and len(ids) > 0:
-            ids_list = ids
-        return ids_list
+    if input('enter y to delete all drafts') == 'y':
+        pass
+    else:
+        print('del aborted. \n exit')
+        return None
 
-    ids_list = ids_list_gen(ids)
+    ids_list = ids_list_gen(token=token)
     # delete unpublished registration in dis_list
     for id in ids_list:
         r = requests.delete('https://zenodo.org/api/deposit/depositions/%s' % id,
                             params={'access_token': token})
         del_check(r)
         sleep(1)
+    return None
+
+
+def load_config(path):
+
+    if not path:
+        path = './config.json'
+    else:
+        pass
+
+    with open(path) as f:
+        config = Config(**json.load(f))
+
+    return config
+
+
+def publish(token):
+
+    ids_list = ids_list_gen(token=token)
+
+    if input('enter y to published all drafts') == 'y':
+        pass
+    else:
+        print('del aborted. \n exit')
+        return None
+    for id in ids_list:
+        res = requests.post(f'https://zenodo.org/api/deposit/depositions/{id}/actions/publish', params={'access_token': token})
+        if res.status_code == 202:
+            print(f'publish deposition id:{id} success')
+        else:
+            print(f'publish deposition id:{id} success error')
+        sleep(1)
+    
+    return None
+
+
+
+
+def emo_main(config):
+    for url in config.urls:
+        data = collection(url=url, path_pre=config.path, selected=config.selected)
+        registration(data, token=config.token)
 
 if __name__ == "__main__":
 
-    for url in Config.urls:
-        data = collection(url)
-        token = Config.token
-        # registration(data=data, token=token)
-
-        # to check registration record
-        # zenodo_rec_deposit(token=Config.token)
+    config = load_config('./config.json')
+    # emo_main(config)
+    rec_deposit(token=config.token)
+    # to check registration record
+    # zenodo_rec_deposit(token=Config.token)

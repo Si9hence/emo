@@ -1,31 +1,9 @@
-安装最新的 PowerShell，了解新功能和改进！https://aka.ms/PSWindows
-
-PS C:\Users\Yulin\OneDrive\UCL\Course\Project\emo> python --version
-Python 3.6.8
-PS C:\Users\Yulin\OneDrive\UCL\Course\Project\emo> pip install requests
-Collecting requests
-  Using cached https://files.pythonhosted.org/packages/92/96/144f70b972a9c0eabbd4391ef93ccd49d0f2747f4f6a2a2738e99e5adc65/requests-2.26.0-py2.py3-none-any.whl
-Collecting charset-normalizer~=2.0.0; python_version >= "3" (from requests)
-  Using cached https://files.pythonhosted.org/packages/47/84/b06f6729fac8108c5fa3e13cde19b0b3de66ba5538c325496dbe39f5ff8e/charset_normalizer-2.0.9-py3-none-any.whl
-Collecting urllib3<1.27,>=1.21.1 (from requests)
-  Using cached https://files.pythonhosted.org/packages/af/f4/524415c0744552cce7d8bf3669af78e8a069514405ea4fcbd0cc44733744/urllib3-1.26.7-py2.py3-none-any.whl
-Collecting idna<4,>=2.5; python_version >= "3" (from requests)
-  Downloading https://files.pythonhosted.org/packages/04/a2/d918dcd22354d8958fe113e1a3630137e0fc8b44859ade3063982eacd2a4/idna-3.3-py3-none-any.whl (61kB)
-    100% |████████████████████████████████| 61kB 716kB/s
-Collecting certifi>=2017.4.17 (from requests)
-  Downloading https://files.pythonhosted.org/packages/37/45/946c02767aabb873146011e665728b680884cd8fe70dde973c640e45b775/certifi-2021.10.8-py2.py3-none-any.whl (149kB)
-Collecting colorama; platform_system == "Windows" (from tqdm<5.0.0,>=4.42.1->pyppeteer>=0.0.14->requests-html)        
-  Downloading https://files.pythonhosted.org/packages/44/98/5b86278fbbf250d239ae0ecb724f8572af1c91f4a11edf4d36a206189440/colorama-0.4.4-py2.py3-none-any.whl
-Collecting typing-extensions>=3.6.4; python_version < "3.8" (from importlib-metadata>=1.4->pyppeteer>=0.0.14->requests-html)
-  Downloading https://files.pythonhosted.org/packages/05/e4/baf0031e39cf545f0c9edd5b1a2ea12609b7fcba2d58e118b11753d68cf0/typing_extensions-4.0.1-py3-none-any.whl
-Collecting zipp>=0.5 (from importlib-metadata>=1.4->pyppeteer>=0.0.14->requests-html)  Downloading https://files.pythonhosted.org/packages/bd/df/d4a4974a3e3957fd1c1fa3082366d7fff6e428ddb55f074bf64876f8e8ad/zipp-3.6.0-py3-none-any.whlCollecting soupsieve>1.2 (from beautifulsoup4->bs4->requests-html)
-  Downloading https://files.pythonhosted.org/packages/72/a6/fd01694427f1c3fcadfdc5f1de901b813b9ac756f0806ef470cfed1de281/soupsieve-2.3.1-py3-none-any.whlInstalling collected packages: lxml, cssselect, pyquery, colorama, tqdm, appdirs, websockets, pyee, typing-extensions, zipp, importlib-metadata, pyppeteer, soupsieve, beautifulsoup4, bs4, parse, fake-useragent, six, w3lib, requests-html
-  Running setup.py install for bs4 ... done
-  Running setup.py install for parse ... done
-  Running setup.py install for fake-useragent ... done
-Successfully installed appdirs-1.4.4 beautifulsoup4-4.10.0 bs4-0.0.1 colorama-0.4.4 cssselect-1.1.0 fake-useragent-0.1.11 importlib-metadata-4.8.3 lxml-4.7.1 parse-1.19.0 pyee-8.2.2 pyppeteer-0.2.6 pyquery-1.4.3 requests-html-0.10.0 six-1.16.0 soupsieve-2.3.1 tqdm-4.62.3 typing-extensions-4.0.1 w3lib-1.22.0 websockets-9.1 zipp-3.6.0
-You are using pip version 18.1, however version 21.3.1 is available.You should consider upgrading via the 'python -m pip install --upgrade pip' command.
-PS C:\Users\Yulin\OneDrive\UCL\Course\Project\emo> pip install --upgrade pip
-Collecting pip  Downloading https://files.pythonhosted.org/packages/a4/6d/6463d49a933f547439d6b5b98b46af8742cc03ae83543e4d7688c2420f8b/pip-21.3.1-py3-none-any.whl (1.7MB)
-    100% |████████████████████████████████| 1.7MB 11.4MB/sInstalling collected packages: pip
-  Found existing installation: pip 18.1    Uninstalling pip-18.1:      Successfully uninstalled pip-18.1
+apt update
+apt install wget
+wget Anaconda3-2021.11-Linux-x86_64.sh
+bash Anaconda3-2021.11-Linux-x86_64.sh -b
+export PATH=~/anaconda3/bin:$PATH
+conda create -n emo python=3.6 -y
+conda activate emo
+conda install -c anaconda markdown -y
+conda install -c conda-forge requests-html -y

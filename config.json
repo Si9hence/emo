@@ -1,10 +1,14 @@
 {
-    "path_info": "./",
-    "path_data": "./demo.json",
-    "type_selected" : [
-        "Spectroscopic",
-        "Definitions",
-        "line list",
-        "partition function", 
-        "opacity"]
+"urls": ["https://exomol.com/data/molecules/NaO/23Na-16O/NaOUCMe/", "https://exomol.com/data/molecules/SiO/28Si-16O/SiOUVenIR/"],
+
+"token":  "87EdGUa0eTuaYZMkc4PFrZnlyQrTDc3Eq2LnQKgXhyHs2UfhjHygqC3nH5YL",
+
+"selected":  ["Spectroscopic",
+            "Definitions",
+            "line list",
+            "partition function",
+            "opacity"
+            ],
+
+"path":  "/mnt/data/exomol/exomol3_data"
 }
